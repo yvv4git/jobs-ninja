@@ -30,3 +30,7 @@ session.json
 
 # Configuration files
 config*.toml
+
+# Idea project files
+.idea/
+.vscode/

@@ -6,12 +6,14 @@ import (
 	"os"
 
 	"github.com/BurntSushi/toml"
+	"github.com/yvv4git/jobs-tg-collector/internal/infrastructure/logger"
 )
 
 type (
 	Config struct {
 		log       *slog.Logger
-		Collector Collector `toml:"collector"`
+		Level     logger.LogLevel `toml:"level"`
+		Collector Collector       `toml:"collector"`
 	}
 
 	Collector struct {

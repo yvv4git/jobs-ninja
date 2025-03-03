@@ -3,29 +3,60 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
 
+	"github.com/alecthomas/kingpin"
 	"github.com/yvv4git/jobs-tg-collector/internal/config"
+	"github.com/yvv4git/jobs-tg-collector/internal/infrastructure/clients"
 	"github.com/yvv4git/jobs-tg-collector/internal/infrastructure/logger"
 	"github.com/yvv4git/jobs-tg-collector/internal/service"
+	"github.com/yvv4git/jobs-tg-collector/internal/utils"
 )
 
+type appMode string
+
 const (
-	configPath = "config.toml"
+	appModeHistory   appMode = "history"
+	appModeSubscribe appMode = "subscribe"
 )
 
 func main() {
-	log := logger.SetupDefaultLogger()
+	configPath := kingpin.Flag("config", "Path to config file").Short('c').Default("config.toml").String()
+	mode := kingpin.Arg("mode", "Mode of operation: history or subscribe").Required().Enum(string(appModeHistory), string(appModeSubscribe))
+	kingpin.Parse()
 
-	cfg := config.NewConfig(log)
-	err := cfg.Load(configPath)
-	if err != nil {
-		log.Error("can't load config", "err", err)
+	logDefault := logger.SetupDefaultLogger()
+
+	fmt.Println(os.Getwd())
+
+	cfg := config.NewConfig(logDefault)
+	if err := cfg.Load(utils.Deref(configPath)); err != nil {
+		logDefault.Error("can't load config", "err", err)
 		return
 	}
 
 	fmt.Println("CFG: ", cfg)
 
-	svcCollector := service.NewCollector(log, nil)
+	log := logger.SetupLoggerWithLevel(logger.ParseLogLevel(cfg.Level))
 
-	svcCollector.FetchHistory(context.Background(), []string{"@jobs_tg_channel"})
+	clientTelegram := clients.NewTelegramClient(log, cfg.Collector.ClientTelegram)
+	svcCollector := service.NewCollector(log, clientTelegram)
+
+	switch appMode(utils.Deref(mode)) {
+	case appModeHistory:
+		log.Info("fetching history")
+
+		if err := svcCollector.FetchHistory(context.Background(), []string{"@jobs_tg_channel"}); err != nil {
+			log.Error("can't fetch history", "err", err)
+			return
+		}
+
+	case appModeSubscribe:
+		log.Info("subscribing")
+
+		if err := clientTelegram.Subscribe(context.Background(), []string{"@jobs_tg_channel"}); err != nil {
+			log.Error("can't subscribe", "err", err)
+			return
+		}
+	}
 }

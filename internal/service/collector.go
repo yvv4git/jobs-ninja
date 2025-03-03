@@ -24,5 +24,11 @@ func NewCollector(log *slog.Logger, clientTelegram ClientTelegram) *Collector {
 }
 
 func (c *Collector) FetchHistory(ctx context.Context, sources []string) error {
+	// TODO: implement fetching history
+	return nil
+}
+
+func (c *Collector) Subscribe(ctx context.Context, sources []string) error {
+	// TODO: implement subscribing to sources
 	return nil
 }
