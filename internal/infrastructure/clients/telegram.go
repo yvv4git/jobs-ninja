@@ -18,7 +18,7 @@ func (t *TelegramClient) SessionStart(ctx context.Context) error {
 	return nil
 }
 
-func (t *TelegramClient) History(ctx context.Context, source string) error {
+func (t *TelegramClient) History(ctx context.Context, sources []string) error {
 	// TODO: implement
 	return nil
 }
