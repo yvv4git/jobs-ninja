@@ -13,6 +13,11 @@ func NewTelegramClient(log *slog.Logger) *TelegramClient {
 	return &TelegramClient{log: log}
 }
 
+func (t *TelegramClient) SessionStart(ctx context.Context) error {
+	// TODO: implement
+	return nil
+}
+
 func (t *TelegramClient) History(ctx context.Context, source string) error {
 	// TODO: implement
 	return nil
