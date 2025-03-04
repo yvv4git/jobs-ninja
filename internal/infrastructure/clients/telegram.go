@@ -2,30 +2,45 @@ package clients
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
+	"path/filepath"
 
+	"github.com/gotd/td/telegram"
+	"github.com/gotd/td/telegram/auth"
 	"github.com/yvv4git/jobs-tg-collector/internal/config"
 )
 
 type TelegramClient struct {
-	log *slog.Logger
-	cfg config.ClientTelegram
+	log      *slog.Logger
+	cfg      config.ClientTelegram
+	client   *telegram.Client
+	authFlow auth.Flow
 }
 
 func NewTelegramClient(log *slog.Logger, cfg config.ClientTelegram) *TelegramClient {
-	return &TelegramClient{
-		log: log,
-		cfg: cfg,
+	sessionStorage := &telegram.FileSessionStorage{
+		Path: filepath.Join(".", cfg.SessionFile),
 	}
-}
 
-func (t *TelegramClient) SessionStart(ctx context.Context) error {
-	// TODO: implement
-	return nil
+	client := telegram.NewClient(cfg.APIID, cfg.APIHash, telegram.Options{SessionStorage: sessionStorage})
+
+	flow := auth.NewFlow(
+		termAuth{phone: cfg.Phone},
+		auth.SendCodeOptions{},
+	)
+
+	return &TelegramClient{
+		log:      log,
+		cfg:      cfg,
+		client:   client,
+		authFlow: flow,
+	}
 }
 
 func (t *TelegramClient) History(ctx context.Context, sources []string) error {
 	// TODO: implement
+	fmt.Println("---> HISTORY")
 	return nil
 }
 

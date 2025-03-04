@@ -1,1 +1,1 @@
-# jobs-tg-collector
+# Jobs Ninja
