@@ -22,7 +22,7 @@ type (
 
 	ClientTelegram struct {
 		Phone       string `toml:"phone"`
-		APIID       string `toml:"api_id"`
+		APIID       int    `toml:"api_id"`
 		APIHash     string `toml:"api_hash"`
 		SessionFile string `toml:"session_file"`
 	}
