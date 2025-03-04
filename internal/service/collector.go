@@ -6,6 +6,7 @@ import (
 )
 
 type ClientTelegram interface {
+	Authenticate(ctx context.Context) error
 	History(ctx context.Context, sources []string) error
 	Subscribe(ctx context.Context, sources []string) error
 }
@@ -20,6 +21,10 @@ func NewCollector(log *slog.Logger, clientTelegram ClientTelegram) *Collector {
 		log:            log,
 		clientTelegram: clientTelegram,
 	}
+}
+
+func (c *Collector) Authenticate(ctx context.Context) error {
+	return c.clientTelegram.Authenticate(ctx)
 }
 
 func (c *Collector) FetchHistory(ctx context.Context, sources []string) error {

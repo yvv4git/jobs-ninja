@@ -17,13 +17,14 @@ import (
 type appMode string
 
 const (
+	appModeAuth      appMode = "auth"
 	appModeHistory   appMode = "history"
 	appModeSubscribe appMode = "subscribe"
 )
 
 func main() {
 	configPath := kingpin.Flag("config", "Path to config file").Short('c').Default("config.toml").String()
-	mode := kingpin.Arg("mode", "Mode of operation: history or subscribe").Required().Enum(string(appModeHistory), string(appModeSubscribe))
+	mode := kingpin.Arg("mode", "Mode of operation: history or subscribe").Required().Enum(string(appModeHistory), string(appModeSubscribe), string(appModeAuth))
 	kingpin.Parse()
 
 	logDefault := logger.SetupDefaultLogger()
@@ -48,6 +49,14 @@ func main() {
 	svcCollector := service.NewCollector(log, clientTelegram)
 
 	switch appMode(utils.Deref(mode)) {
+	case appModeAuth:
+		log.Info("authenticating")
+
+		if err := svcCollector.Authenticate(ctx); err != nil {
+			log.Error("can't authenticate", "err", err)
+			return
+		}
+
 	case appModeHistory:
 		log.Info("fetching history")
 

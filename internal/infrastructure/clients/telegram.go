@@ -38,6 +38,31 @@ func NewTelegramClient(log *slog.Logger, cfg config.ClientTelegram) *TelegramCli
 	}
 }
 
+func (t *TelegramClient) Authenticate(ctx context.Context) error {
+	err := t.client.Run(ctx, func(ctx context.Context) error {
+		if err := t.client.Auth().IfNecessary(ctx, t.authFlow); err != nil {
+			return err
+		}
+
+		user, err := t.client.Self(ctx)
+		if err != nil {
+			return fmt.Errorf("get self: %w", err)
+		}
+
+		firstName, ok := user.GetFirstName()
+		if ok {
+			t.log.Debug("get first name", "username", firstName)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("run client: %w", err)
+	}
+
+	return nil
+}
+
 func (t *TelegramClient) History(ctx context.Context, sources []string) error {
 	err := t.client.Run(ctx, func(ctx context.Context) error {
 		if err := t.client.Auth().IfNecessary(ctx, t.authFlow); err != nil {
