@@ -41,6 +41,7 @@ func (a termAuth) Password(_ context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return strings.TrimSpace(string(bytePwd)), nil
 }
 
@@ -50,5 +51,6 @@ func (a termAuth) Code(_ context.Context, _ *tg.AuthSentCode) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return strings.TrimSpace(code), nil
 }
