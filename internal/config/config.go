@@ -21,10 +21,12 @@ type (
 	}
 
 	ClientTelegram struct {
-		Phone       string `toml:"phone"`
-		APIID       int    `toml:"api_id"`
-		APIHash     string `toml:"api_hash"`
-		SessionFile string `toml:"session_file"`
+		Phone         string   `toml:"phone"`
+		APIID         int      `toml:"api_id"`
+		APIHash       string   `toml:"api_hash"`
+		SessionFile   string   `toml:"session_file"`
+		HistoryList   []string `toml:"history_list"`
+		SubscribeList []string `toml:"subscribe_list"`
 	}
 )
 

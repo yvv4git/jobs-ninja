@@ -60,7 +60,7 @@ func main() {
 	case appModeHistory:
 		log.Info("fetching history")
 
-		if err := svcCollector.FetchHistory(ctx, []string{"@jobs_tg_channel"}); err != nil {
+		if err := svcCollector.FetchHistory(ctx, cfg.Collector.ClientTelegram.HistoryList); err != nil {
 			log.Error("can't fetch history", "err", err)
 			return
 		}
@@ -68,7 +68,7 @@ func main() {
 	case appModeSubscribe:
 		log.Info("subscribing")
 
-		if err := clientTelegram.Subscribe(ctx, []string{"@jobs_tg_channel"}); err != nil {
+		if err := clientTelegram.Subscribe(ctx, cfg.Collector.ClientTelegram.SubscribeList); err != nil {
 			log.Error("can't subscribe", "err", err)
 			return
 		}
