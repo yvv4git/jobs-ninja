@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/signal"
 
 	"github.com/alecthomas/kingpin"
 	"github.com/yvv4git/jobs-tg-collector/internal/config"
@@ -39,14 +40,18 @@ func main() {
 
 	log := logger.SetupLoggerWithLevel(logger.ParseLogLevel(cfg.Level))
 
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
+	defer cancel()
+
 	clientTelegram := clients.NewTelegramClient(log, cfg.Collector.ClientTelegram)
+
 	svcCollector := service.NewCollector(log, clientTelegram)
 
 	switch appMode(utils.Deref(mode)) {
 	case appModeHistory:
 		log.Info("fetching history")
 
-		if err := svcCollector.FetchHistory(context.Background(), []string{"@jobs_tg_channel"}); err != nil {
+		if err := svcCollector.FetchHistory(ctx, []string{"@jobs_tg_channel"}); err != nil {
 			log.Error("can't fetch history", "err", err)
 			return
 		}
@@ -54,7 +59,7 @@ func main() {
 	case appModeSubscribe:
 		log.Info("subscribing")
 
-		if err := clientTelegram.Subscribe(context.Background(), []string{"@jobs_tg_channel"}); err != nil {
+		if err := clientTelegram.Subscribe(ctx, []string{"@jobs_tg_channel"}); err != nil {
 			log.Error("can't subscribe", "err", err)
 			return
 		}
