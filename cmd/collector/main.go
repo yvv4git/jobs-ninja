@@ -25,6 +25,7 @@ const (
 func main() {
 	configPath := kingpin.Flag("config", "Path to config file").Short('c').Default("config.toml").String()
 	mode := kingpin.Arg("mode", "Mode of operation: history or subscribe").Required().Enum(string(appModeHistory), string(appModeSubscribe), string(appModeAuth))
+
 	kingpin.Parse()
 
 	logDefault := logger.SetupDefaultLogger()
