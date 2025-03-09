@@ -11,6 +11,7 @@ import (
 	"github.com/gotd/td/telegram/auth"
 	"github.com/gotd/td/tg"
 	"github.com/yvv4git/jobs-tg-collector/internal/config"
+	"github.com/yvv4git/jobs-tg-collector/internal/domain"
 )
 
 type TelegramClient struct {
@@ -53,7 +54,7 @@ func (t *TelegramClient) Authenticate(ctx context.Context) error {
 
 		firstName, ok := user.GetFirstName()
 		if ok {
-			t.log.Debug("get first name", "username", firstName)
+			t.log.Debug("get first source", "username", firstName)
 		}
 
 		return nil
@@ -65,46 +66,50 @@ func (t *TelegramClient) Authenticate(ctx context.Context) error {
 	return nil
 }
 
-func (t *TelegramClient) History(ctx context.Context, sources []string) error {
+func (t *TelegramClient) History(ctx context.Context, sources []string) ([]domain.Message, error) {
+	var messages []domain.Message
+
 	err := t.client.Run(ctx, func(ctx context.Context) error {
 		if err := t.client.Auth().IfNecessary(ctx, t.authFlow); err != nil {
 			return err
 		}
 
 		for _, source := range sources {
-			fmt.Printf("\nHistory[%s]: \n", source)
+			// fmt.Printf("\nHistory[%s]: \n", source)
 
-			err := t.historyByNames(ctx, source, 10)
+			sourceMessages, err := t.historyByNames(ctx, source, 10)
 			if err != nil {
-				t.log.Error("get history by name", "error", err)
+				t.log.Error("get history by source", "error", err)
 			}
+
+			messages = append(messages, sourceMessages...)
 		}
 
 		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("run client: %w", err)
+		return nil, fmt.Errorf("run client: %w", err)
 	}
 
-	return nil
+	return messages, nil
 }
 
-func (t *TelegramClient) historyByNames(ctx context.Context, name string, msgCount int) error {
+func (t *TelegramClient) historyByNames(ctx context.Context, source string, msgCount int) ([]domain.Message, error) {
 	resolveRequest := &tg.ContactsResolveUsernameRequest{
-		Username: name,
+		Username: source,
 	}
 
 	api := t.client.API()
 
 	group, err := api.ContactsResolveUsername(ctx, resolveRequest)
 	if err != nil {
-		return fmt.Errorf("resolve username: %w", err)
+		return nil, fmt.Errorf("resolve username: %w", err)
 	}
 
 	peer := group.GetPeer()
 	peerChannel, ok := peer.(*tg.PeerChannel)
 	if !ok {
-		return fmt.Errorf("peer is not a channel or group")
+		return nil, fmt.Errorf("peer is not a channel or group")
 	}
 
 	accessHash := int64(0)
@@ -118,7 +123,7 @@ func (t *TelegramClient) historyByNames(ctx context.Context, name string, msgCou
 	}
 
 	if accessHash == 0 {
-		return fmt.Errorf("get access hash for the channel")
+		return nil, fmt.Errorf("get access hash for the channel")
 	}
 
 	inputPeer := &tg.InputPeerChannel{
@@ -137,16 +142,22 @@ func (t *TelegramClient) historyByNames(ctx context.Context, name string, msgCou
 		Hash:       0,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to get history: %w", err)
+		return nil, fmt.Errorf("failed to get history: %w", err)
 	}
 
+	var messages []domain.Message
 	// TODO: add processing of messages
 	switch result := history.(type) {
 	case *tg.MessagesMessages: // Обычные сообщения
 		for _, msg := range result.Messages {
 			switch m := msg.(type) {
 			case *tg.Message:
-				fmt.Printf("Message[%v]: %s\n", time.Unix(int64(m.Date), 0), m.Message)
+				// fmt.Printf("Message[%v][sender:%v]: %s\n", time.Unix(int64(m.Date), 0), m.FwdFrom.FromName, m.Message)
+				messages = append(messages, domain.Message{
+					CreatedAt: time.Unix(int64(m.Date), 0),
+					Source:    source,
+					Text:      m.Message,
+				})
 			case *tg.MessageService:
 				fmt.Printf("Service message: %v\n", m)
 			default:
@@ -158,7 +169,12 @@ func (t *TelegramClient) historyByNames(ctx context.Context, name string, msgCou
 		for _, msg := range result.Messages {
 			switch m := msg.(type) {
 			case *tg.Message:
-				fmt.Printf("[%d] Message channel[%v]: %s\n", idx, time.Unix(int64(m.Date), 0), m.Message)
+				// fmt.Printf("[%d] Message channel[%v][sender:%v]: %s\n", idx, time.Unix(int64(m.Date), 0), m.FwdFrom.FromName, m.Message)
+				messages = append(messages, domain.Message{
+					CreatedAt: time.Unix(int64(m.Date), 0),
+					Source:    source,
+					Text:      m.Message,
+				})
 			case *tg.MessageService:
 				fmt.Printf("[%d] Service message channel: %v\n", idx, m)
 			default:
@@ -167,10 +183,10 @@ func (t *TelegramClient) historyByNames(ctx context.Context, name string, msgCou
 			idx++
 		}
 	default:
-		return fmt.Errorf("unsupported message type: %T", result)
+		return nil, fmt.Errorf("unsupported message type: %T", result)
 	}
 
-	return nil
+	return messages, nil
 }
 
 func (t *TelegramClient) Subscribe(ctx context.Context, sources []string) error {

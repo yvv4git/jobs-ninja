@@ -2,12 +2,15 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
+
+	"github.com/yvv4git/jobs-tg-collector/internal/domain"
 )
 
 type ClientTelegram interface {
 	Authenticate(ctx context.Context) error
-	History(ctx context.Context, sources []string) error
+	History(ctx context.Context, sources []string) ([]domain.Message, error)
 	Subscribe(ctx context.Context, sources []string) error
 }
 
@@ -30,9 +33,13 @@ func (c *Collector) Authenticate(ctx context.Context) error {
 func (c *Collector) FetchHistory(ctx context.Context, sources []string) error {
 	// TODO: implement fetching history
 
-	err := c.clientTelegram.History(ctx, sources)
+	messages, err := c.clientTelegram.History(ctx, sources)
 	if err != nil {
 		return err
+	}
+
+	for i, message := range messages {
+		fmt.Printf("Message[%d]: %v\n ", i, message)
 	}
 
 	return nil
